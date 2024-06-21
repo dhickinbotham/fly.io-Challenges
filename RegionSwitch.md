@@ -6,11 +6,14 @@
 
 ## Move Fly App to another Region
 
+One of the features of Fly.io is the ability to run your app on a server in a [region](https://fly.io/docs/reference/regions/) close to your userbase. You even have the ability to completely move a Fly App from one region to a new region.
+Scale an app's regions https://fly.io/docs/apps/scale-count/#scale-an-apps-regions
 
 Scale up machine(s) in another region  `fly scale count 2 --region syd`
 
 scale down machine(s) in a region  `fly scale count 0 --region ord`
 Show VM Scale `fly scale show`
+
  VM Resources for app: winde
 
 Groups
