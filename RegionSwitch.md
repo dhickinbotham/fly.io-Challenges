@@ -9,7 +9,7 @@
 One of the features of Fly.io is the ability to run your app on a server in a [region](https://fly.io/docs/reference/regions/) close to your userbase. You even have the ability to completely move a Fly App from one region to a new region.
 
 ### Determine which region(s) your app is currently in
-To display what region(s) your app has Machines and Volumnes in, you can check using `fly machines list`. You will see the app with each Machine and Volume listed and additional information as well as which region(s) they are in. Here is an example of the outputs shown: 
+To display what region(s) your app has Machines and Volumes in, you can check using `fly machines list`. You will see the app with each Machine and Volume listed and additional information as well as which region(s) they are in. Here is an example of the outputs shown: 
 
 ```
 1 machine has been retrieved from app AppName.
@@ -23,7 +23,7 @@ ID              NAME                    STATE   CHECKS  REGION  ROLE    IMAGE   
 ```
 
 ### Create a copy of a volume (Fork a Volume)
-Create an exact copy of a volume, including its data, in the region you want by forking the current volume.
+Create an exact copy of a volume, including its data, in the region you want by [forking the current volume](https://fly.io/docs/volumes/volume-manage/#create-a-copy-of-a-volume-fork-a-volume).
 
 <div class="alert alert-info important icon" role="alert"><p><strong class="font-[550] text-navy-950">Important:</strong> After you fork a volume, the new volume is independent of the source volume. The new volume and the source volume do not continue to sync.</p>
 </div>
@@ -65,8 +65,21 @@ Provisioning a new Machine with image docker-hub-mirror.fly.io/flyio/hellofly:la
 No health checks found
 Machine has been successfully cloned!
 ```
+
+### Scaling down in the region(s) you no longer want to run in
+To scale down a machine in a region you no longer need, utilize the `fly scale count --region <region abbreviation>`. This will remove the machines in the old region, but will leave the volume unattached.
+
+```
+fly scale count 0 --region syd
+
+App 'AppName' is going to be scaled according to this plan:
+? Scale app winde? (y/N) y
+Executing scale plan
+   Destroyed 908016eec66d28 group:app region:syd size:shared-cpu-1x
+```
+
 ### Destroy old Volume
-Once you have successfully forked and cloned the Volume and Machine into the new region, you can now destroy your old volume.
+Once you have successfully forked and cloned the Volume and Machine into the new region as well as scaled down the machines down in the old region, you can now destroy your old volume.
 <div class="warning icon"><p><b>Warning:</b> When you destroy a volume, you permanently delete all its data.</p>
 </div>
 
