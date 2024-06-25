@@ -9,43 +9,90 @@
 One of the features of Fly.io is the ability to run your app on a server in a [region](https://fly.io/docs/reference/regions/) close to your userbase. You even have the ability to completely move a Fly App from one region to a new region.
 
 ### Determine which region(s) your app is currently in
-To list regions your app has Machine(s) in, you can check using `fly regions list`. You will see the app with each region listed. Here is an example of the outputs shown: 
+To display what region(s) your app has Machines and Volumnes in, you can check using `fly machines list`. You will see the app with each Machine and Volume listed and additional information as well as which region(s) they are in. Here is an example of the outputs shown: 
+
+```
+1 machine has been retrieved from app AppName.
+View it in the UI here (​https://fly.io/apps/AppName/machines/)
+
+AppName
+ID              NAME                    STATE   CHECKS  REGION  ROLE    IMAGE                   IP ADDRESS
+        VOLUME                  CREATED                 LAST UPDATED            APP PLATFORM    PROCESS GROUP   SIZE
+
+908016eec66d##  morning-mountain-####   stopped         syd             flyio/hellofly:latest   fdaa:9:6dfe:a7b:2d8:d930:##a8:2 vol_49kwg##gk8dwg39v    2024-06-25T14:20:36Z    2024-06-25T14:35:20Z    v2              app             shared-cpu-1x:1024MB
+```
+
+### Create a copy of a volume (Fork a Volume)
+Create an exact copy of a volume, including its data, in the region you want by forking the current volume.
+
+<div class="alert alert-info important icon" role="alert"><p><strong class="font-[550] text-navy-950">Important:</strong> After you fork a volume, the new volume is independent of the source volume. The new volume and the source volume do not continue to sync.</p>
+</div>
+
+#### Find the Volume ID
+
+`fly volumes list`
+```
+ID                      STATE   NAME            SIZE    REGION  ZONE    ENCRYPTED       ATTACHED VM     CREATED AT
+vol_49kwg##gk8dwg39v    created myapp_data      1GB     syd     8f69    true            908016eec66d##  6 minutes ago
+```
+
+#### Fork the Volume
+
+`fly volumes fork vol_49kwg##gk8dwg39v --region ord`
+```
+                  ID: vol_49kwg##ww5xl07ov
+                Name: myapp_data
+                 App: AppName
+              Region: ord
+                Zone: 7074
+             Size GB: 1
+           Encrypted: true
+          Created at: 25 Jun 24 14:27 UTC
+  Snapshot retention: 5
+ Scheduled snapshots: true
+```
+
+### Clone Machine and attach Forked Volume
+Once you have forked your Machine's volume, you can now clone the machine and attach the newly forked volume with the following command: `fly machine clone <machine id> --region <region code> --attach-volume <volume id>:<destination mount path>`
+
+`fly machine clone 90801690c606## --region ord --attach-volume vol_49kwg##ww5xl07ov:/data`
+```
+Cloning Machine 90801690c606## into region ord
+Attaching existing volume vol_49kwg##ww5xl07ov
+Provisioning a new Machine with image docker-hub-mirror.fly.io/flyio/hellofly:latest...
+  Machine 857100a4e917## has been created...
+  Waiting for Machine 857100a4e917## to start...
+No health checks found
+Machine has been successfully cloned!
+```
+### Destroy old Volume
+Once you have successfully forked and cloned the Volume and Machine into the new region, you can now destroy your old volume.
+<div class="warning icon"><p><b>Warning:</b> When you destroy a volume, you permanently delete all its data.</p>
+</div>
+
+Run `fly volumes list` to get the Volume ID
+```
+ID                      STATE   NAME            SIZE    REGION  ZONE    ENCRYPTED       ATTACHED VM     CREATED AT
+vol_49kwg##ww5xl07ov    created myapp_data      1GB     ord     7074    true            908016eec66d28  6 minutes ago
+vol_49kwg##gk8dwg39v    created myapp_data      1GB     syd     8f69    true                            1 year ago
+```
+
+Destroy the Volume:
+`fly volumes destroy <volume id>`
+
+```
+fly volumes delete vol_49kwg##gk8dwg39v
+Warning! Every volume is pinned to a specific physical host. You should create two or more volumes per application. Deleting this volume will leave you with 1 volume(s) for this application, and it is not reversible.  Learn more at https://? Are you sure you want to destroy this volume? Yes
+Destroyed volume ID: vol_49kwg##gk8dwg39v name: myapp_data
+```
+
+Once you have moved your app to it's new region, you can run `fly regions list` again to check which region(s) your app has machines/volumes in:
 
 ```
 Regions [app]: ord
 ```
 
-### Scale an App's region
-Moving an app with attached Fly Machine(s) and Fly Volume(s) can be done by [scaling your app](https://fly.io/docs/apps/scale-count/#scale-an-apps-regions) up in the region(s) you need them to be in and scaling down in the region(s) you no longer want the app to run in using `fly scale count` which creates and/or destroys Machines to reach the specified target count across the regions you list in this option.
-
-To get a list of regions available use `fly platform regions`.
-
-#### Scaling up in the region(s) you want to run in
-To scale up a machine in a region, utilize the `fly scale count --region <region abbreviation>`. For example, if you wanted to scale up in the Sydney region, you would use the following: `fly scale count 1 --region syd`
-
-```
-App 'AppName' is going to be scaled according to this plan:
-? Scale app AppName? (y/N) y
-Executing scale plan
-  Created 1781994c3d0### group:app region:ord size:shared-cpu-1x
-```
-#### Scaling down in the region(s) you no longer want to run in
-To scale down a machine in a region, utilize the `fly scale count --region <region abbreviation>`. For example, if you had a machine in the Chicago region, you would use the following
-scale down machine(s) in a region  `fly scale count 0 --region ord`
-
-```
-App 'AppName' is going to be scaled according to this plan:
-? Scale app winde? (y/N) y
-Executing scale plan
-  Destroyed 080560f6620### group:app region:ord size:shared-cpu-1x
-```
-Once you have moved your app to it's new region, you can run `fly regions list` again to check which region(s) your app has machines in:
-
-```
-Regions [app]: syd
-```
-
-That's it! Your app is now running it's machines in region(s) close to your userbase.
+That's it! Your app is now running it's machine(s) with attached volume(s) in region(s) close to your userbase.
 
 ### Related Topics
 - [Scale the Number of Machines](https://fly.io/docs/apps/scale-count/)
@@ -53,3 +100,4 @@ That's it! Your app is now running it's machines in region(s) close to your user
 - [Create and manage volumes](https://fly.io/docs/volumes/volume-manage/)
 - [Scale an app with volumes](https://fly.io/docs/apps/scale-count/#scale-an-app-with-volumes)
 - [Primary Region](https://fly.io/docs/reference/configuration/#primary-region)
+- [Restore a Deleted Volume](https://fly.io/docs/volumes/volume-manage/#restore-a-deleted-volume)
